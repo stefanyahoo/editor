@@ -1084,7 +1084,18 @@ async function publishToGitHub() {
        page load, so leaving them baked in makes them accumulate without bound on each publish.
        Removing them here keeps every published page byte-stable across repeated publishes. */
     doc.querySelectorAll('.ig-tooth, .ig-particle, .banner-sparkles-canvas').forEach(function(el){ el.remove(); });
-    
+
+    /* Reset RevU review widgets to their bare embed — the widget script re-injects live reviews
+       on every page load, so leaving the injected DOM baked in would duplicate it and grow the
+       file on each publish. Keep only the loader <script>; the widget re-renders on load. */
+    doc.querySelectorAll('div[data-bid]').forEach(function(w){
+      Array.prototype.slice.call(w.children).forEach(function(ch){
+        var keep = ch.tagName === 'SCRIPT' && (ch.getAttribute('src') || '').indexOf('reviewability.com') !== -1;
+        if (!keep) { ch.remove(); }
+      });
+    });
+    doc.querySelectorAll('script.json-ld-content').forEach(function(el){ el.textContent = ''; });
+
     var cleanHtml = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
     
     // 4. Inject showPage routing intercept and dynamic boot call in a copy of the HTML
